@@ -7,6 +7,7 @@ const evaluateRouter = require("./evaluate")
 const promoteRouter = require("./promote")
 
 function route(app) {
+
     app.use("/api/admins", adminRouter);
     app.use("/api/users", userRouter);
     app.use("/api/products", productRouter);
@@ -14,6 +15,7 @@ function route(app) {
     app.use("/api/orders", orderRouter);
     app.use("/api/evaluates", evaluateRouter);
     app.use("/api/promotes", promoteRouter);
+    app.use('/', (req, res) => { res.send('Hello Shoppet Server') })
 }
 
 module.exports = route;
