@@ -2,14 +2,14 @@ const express = require("express");
 const userRouter = express.Router()
 
 // Middleware
-const { storageUploadSinglePhoto } = require('../middleware/upload')
+const { uploadImageUer } = require('../middleware/upload')
 
 // Controller
 const {
     getListUsers,
     getOneUser,
     getSearchAccountUser,
-    getAvatarUser,
+
     addUser,
     checkLogin,
     removeUser,
@@ -25,9 +25,9 @@ userRouter
     .get('/', getListUsers)
     .get('/search', getSearchAccountUser)
     .get('/:id', getOneUser)
-    .get('/:id/:name_avt', getAvatarUser)
 
-    .post('/', storageUploadSinglePhoto('avatar', 'user'), addUser)
+
+    .post('/', uploadImageUer.single('avatar'), addUser)
     .post('/login', checkLogin)
 
     .delete('/:id', removeUser)
@@ -35,8 +35,8 @@ userRouter
     .delete('/:id/cart', removeSomeProductCart)
 
     .put('/:id/change', updatePoint)
-    .put('/:id', storageUploadSinglePhoto('avatar', 'user'), updateOneUser)
+    .put('/:id', uploadImageUer.single('avatar'), updateOneUser)
     .put('/:id/cart/:id_product', updateCart)
-    .put('/:id/:name_avt', updateAvatarUser)
+    .put('/:id/:idAvatar', updateAvatarUser)
 
 module.exports = userRouter

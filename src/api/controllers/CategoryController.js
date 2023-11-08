@@ -1,8 +1,5 @@
-const fs = require('fs')
-const appRoot = require('app-root-path');
-
+const cloudinary = require('cloudinary').v2;
 const Category = require('../models/CategoryModel');
-const pathCategory = '/src/api/public/uploads/categorys/'
 
 // GET /api/categorys
 const getListCategorys = (req, res, next) => {
@@ -38,26 +35,21 @@ const getOneCategory = (req, res, next) => {
         .catch(next);
 }
 
-// GET /api/categorys/:id/:photo
-const getPhotoCategory = (req, res, next) => {
-    Category.findById(req.params.id)
-        .then(() => {
-            let photoPath = appRoot + pathCategory + req.params.photo;
-            res.sendFile(photoPath);
-        })
-        .catch(next);
-}
-
 // POST /api/categorys
 const addCategory = (req, res, next) => {
+    let arrPhoto = []
+    if (req.file) {
+        arrPhoto.push(req.file.path)
+        arrPhoto.push(req.file.filename)
+    }
     const category = new Category({
         name: req.body.name,
-        photo: req.file ? req.file.filename : null,
+        photo: arrPhoto,
     })
         .save()
         .then(() => {
             res.status(200).json({
-                message: 'success'
+                message: 'success',
             });
         })
         .catch(next)
@@ -67,14 +59,8 @@ const addCategory = (req, res, next) => {
 const removeCategory = (req, res, next) => {
     Category.findOneAndDelete({ _id: req.params.id })
         .then((category) => {
-            let photoPath = appRoot + pathCategory + category.photo
-
-            fs.unlink(photoPath, (err) => {
-                if (err) {
-                    console.error(err)
-                    return
-                }
-            })
+            let public_id = category.photo[1]
+            cloudinary.uploader.destroy(public_id).then();
             res.status(200).json({
                 message: 'success'
             });
@@ -86,21 +72,19 @@ const removeCategory = (req, res, next) => {
 const updateOneCategory = (req, res, next) => {
 
     const updateData = {}
-
+    let arrPhoto = []
+    if (req.file) {
+        arrPhoto.push(req.file.path)
+        arrPhoto.push(req.file.filename)
+        updateData.photo = arrPhoto
+    }
     req.body.name !== "" ? updateData.name = req.body.name : updateData
-    req.file ? updateData.photo = req.file.filename : updateData
 
     Category.findByIdAndUpdate({ _id: req.params.id }, updateData)
         .then((category) => {
             if (updateData.photo) {
-                let photoPath = appRoot + pathCategory + category.photo
-
-                fs.unlink(photoPath, (err) => {
-                    if (err) {
-                        console.error(err)
-                        return
-                    }
-                })
+                let public_id = category.photo[1]
+                cloudinary.uploader.destroy(public_id).then();
             }
 
             res.status(200).json({
@@ -114,7 +98,6 @@ module.exports = {
     getListCategorys,
     getSearchCategory,
     getOneCategory,
-    getPhotoCategory,
     addCategory,
     removeCategory,
     updateOneCategory

@@ -1,11 +1,8 @@
-const bcrypt = require('bcrypt');
-const fs = require('fs')
-const appRoot = require('app-root-path');
+const cloudinary = require('cloudinary').v2;
 const HashPassword = require('../utils/hashPassWord')
 const ComparePassword = require('../utils/comparePassword')
 
 const User = require('../models/UserModel');
-const pathUser = '/src/api/public/uploads/users/'
 
 // GET /api/users
 const getListUsers = (req, res, next) => {
@@ -54,11 +51,6 @@ const getSearchAccountUser = async (req, res, next) => {
     }
 }
 
-// GET /api/users/:id/:name_avt
-const getAvatarUser = (req, res, next) => {
-    let avatarPath = appRoot + pathUser + req.params.name_avt;
-    res.sendFile(avatarPath);
-}
 
 // POST /api/users/login
 const checkLogin = (req, res, next) => {
@@ -102,7 +94,7 @@ const addUser = async (req, res, next) => {
 
     method_login = req.body.email ? { email: true, phone: false } : { email: false, phone: true }
     req.body.email ? email = req.body.email : phone_login = req.body.phone_login
-    fileName = req.file ? req.file.filename : fileName
+
 
     const user = new User({
         phone_login,
@@ -114,7 +106,7 @@ const addUser = async (req, res, next) => {
         phone,
         gender,
         date_birth,
-        avatar: fileName ? fileName : null,
+        avatar: req.file ? [req.file.path, req.file.filename] : null,
     })
         .save()
         .then(() => {
@@ -136,13 +128,7 @@ const removeUser = (req, res, next) => {
             })
 
             listAvt.map(avt => {
-                let avatarPath = appRoot + pathUser + avt
-                fs.unlink(avatarPath, (err) => {
-                    if (err) {
-                        console.error(err)
-                        return
-                    }
-                })
+                cloudinary.uploader.destroy(avt[1]).then();
             })
 
             res.status(200).json({
@@ -155,7 +141,7 @@ const removeUser = (req, res, next) => {
 // DELETE /api/users/:id/avatar
 const removeAvatarUser = (req, res, next) => {
     User.findByIdAndUpdate({ _id: req.params.id }, {
-        $set: { avatar: null }
+        $set: { avatar: [] }
     })
         .then((user) => {
             return User.updateOne({ _id: user._id }, { $push: { avatar_old: user.avatar } })
@@ -197,6 +183,7 @@ const updateOneUser = async (req, res, next) => {
             updateUser[key] = req.body[key];
         }
     }
+    req.file ? updateUser.avatar = [req.file.path, req.file.filename] : updateUser
 
     req.body.address ? updateUser.address = req.body.address + ' - ' + req.body.ward + ' - ' + req.body.district + ' - ' + req.body.province : updateUser
     User.findByIdAndUpdate(req.params.id, updateUser)
@@ -213,15 +200,19 @@ const updateOneUser = async (req, res, next) => {
 
 }
 
-// PUT /api/users/:id/:name_avt
+// PUT /api/users/:id/:idAvatar
 const updateAvatarUser = (req, res, next) => {
+    let updateAvtOld = []
+    let arrAvatar = []
     User.findById(req.params.id)
         .then((user) => {
-            const updateAvtOld = []
             for (let i in user.avatar_old) {
-                if (user.avatar_old[i] === req.params.name_avt) {
-                    user.avatar !== null &&
+                let idAvatarOld = user.avatar_old[i][1].split("/").pop()
+                if (idAvatarOld === req.params.idAvatar) {
+                    if (user.avatar.length !== 0) {
                         updateAvtOld.push(user.avatar)
+                    }
+                    arrAvatar = (user.avatar_old[i])
                 } else {
                     updateAvtOld.push(user.avatar_old[i])
                 }
@@ -229,7 +220,7 @@ const updateAvatarUser = (req, res, next) => {
             return User.updateOne({ _id: user._id }, {
                 $set: {
                     avatar_old: updateAvtOld,
-                    avatar: req.params.name_avt,
+                    avatar: arrAvatar,
                 }
             })
         })
@@ -294,7 +285,6 @@ module.exports = {
     getListUsers,
     getOneUser,
     getSearchAccountUser,
-    getAvatarUser,
     addUser,
     checkLogin,
     removeUser,

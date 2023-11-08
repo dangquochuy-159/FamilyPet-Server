@@ -15,7 +15,6 @@ function route(app) {
     app.use("/api/orders", orderRouter);
     app.use("/api/evaluates", evaluateRouter);
     app.use("/api/promotes", promoteRouter);
-    app.use('/', (req, res) => { res.send('Hello Shoppet Server') })
 }
 
 module.exports = route;

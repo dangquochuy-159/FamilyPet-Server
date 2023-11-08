@@ -1,8 +1,6 @@
-const fs = require('fs')
-const appRoot = require('app-root-path');
-
+const cloudinary = require('cloudinary').v2;
 const Product = require('../models/ProductModel')
-const pathProduct = '/src/api/public/uploads/products/'
+
 
 // GET /api/products
 const getListProduct = (req, res, next) => {
@@ -73,14 +71,14 @@ const getOneProduct = (req, res, next) => {
         })
 }
 
-// GET /api/products/:id/:photo
-const getPhotoProduct = (req, res, next) => {
-    let photoPath = appRoot + pathProduct + req.params.photo;
-    res.sendFile(photoPath);
-}
-
 // POST /api/products
 const addProduct = (req, res, next) => {
+
+    let arrPhoto = [req.files.photo[0].path, req.files.photo[0].filename]
+    let arrPhotoDetail = []
+    for (let photo of req.files.photo_detail) {
+        arrPhotoDetail.push([photo.path, photo.filename])
+    }
 
     const photoStr = req.files.photo.map(file => file.originalname).join()
     const photo_detail = req.files.photo_detail.map(file => file.originalname)
@@ -93,10 +91,10 @@ const addProduct = (req, res, next) => {
         quantity: Number(req.body.quantity),
         price: Number(req.body.price),
         sale_price: Number(req.body.sale_price),
-        photo: photoStr,
+        photo: arrPhoto,
         outstand: req.body.outstand,
         color: arrColor,
-        photo_detail: photo_detail,
+        photo_detail: arrPhotoDetail,
         status: {
             in_stock: req.body.quantity > 5,
             low_stock: req.body.quantity <= 5 && req.body.quantity > 0,
@@ -118,17 +116,9 @@ const removeProduct = (req, res, next) => {
         .then(product => {
             let photo = product.photo
             let photo_detail = product.photo_detail
-            let namePhoto
-            let pathPhoto
             photo_detail.push(photo)
             for (let pt of photo_detail) {
-                namePhoto = pt
-                pathPhoto = appRoot + pathProduct + namePhoto
-                fs.unlink(pathPhoto, (err) => {
-                    if (err) {
-                        return
-                    }
-                })
+                cloudinary.uploader.destroy(pt[1]).then();
             }
             res.status(200).json({
                 message: 'success'
@@ -145,8 +135,16 @@ const updateProduct = (req, res, next) => {
             updateProduct[key] = req.body[key];
         }
     }
-    req.files.photo ? updateProduct.photo = req.files.photo.map(file => file.filename).join() : updateProduct
-    req.files.photo_detail ? updateProduct.photo_detail = req.files.photo_detail.map(file => file.filename) : updateProduct
+
+
+    req.files.photo ? updateProduct.photo = [req.files.photo[0].path, req.files.photo[0].filename] : updateProduct
+    if (req.files.photo_detail) {
+        let arrPhotoDetail = []
+        for (let photo of req.files.photo_detail) {
+            arrPhotoDetail.push([photo.path, photo.filename])
+        }
+        updateProduct.photo_detail = arrPhotoDetail
+    }
 
     if (req.body.quantity) {
         updateProduct.status = {
@@ -161,25 +159,13 @@ const updateProduct = (req, res, next) => {
             let namePhoto
             let pathPhoto
             if (updateProduct.photo) {
-                let photo = product.photo
-                namePhoto = photo
-                pathPhoto = appRoot + pathProduct + namePhoto
-                fs.unlink(pathPhoto, (err) => {
-                    if (err) {
-                        return
-                    }
-                })
+                let public_id = product.photo[1]
+                cloudinary.uploader.destroy(public_id).then();
             }
             if (updateProduct.photo_detail) {
                 let photo_detail = product.photo_detail
-                for (let pt of photo_detail) {
-                    namePhoto = pt
-                    pathPhoto = appRoot + pathProduct + namePhoto
-                    fs.unlink(pathPhoto, (err) => {
-                        if (err) {
-                            return
-                        }
-                    })
+                for (let photo of photo_detail) {
+                    cloudinary.uploader.destroy(photo[1]).then();
                 }
             }
             res.status(200).json({
@@ -192,8 +178,6 @@ const updateProduct = (req, res, next) => {
 // PUT api/products/quantity
 const updateQuantityProduct = (req, res, next) => {
     let updateArr = req.body
-
-
     updateArr.forEach((item) => {
         Product.updateOne(
             { _id: item.id },
@@ -211,7 +195,6 @@ module.exports = {
     searchProduct,
     filterProduct,
     getOneProduct,
-    getPhotoProduct,
     addProduct,
     removeProduct,
     updateProduct,

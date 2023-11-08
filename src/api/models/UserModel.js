@@ -15,7 +15,7 @@ const UserSchema = Schema(
         },
         password: { type: String, required: true },
         address: { type: String, required: true },
-        avatar: { type: String },
+        avatar: { type: Array },
         avatar_old: { type: Array },
         phone: { type: String, required: true },
         gender: { type: String },

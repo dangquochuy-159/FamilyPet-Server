@@ -11,7 +11,7 @@ const AdminSchema = Schema(
         address: { type: String, required: true },
         gender: { type: String, required: true },
         date_birth: { type: String, required: true },
-        avatar: { type: String },
+        avatar: { type: Array },
         avatar_old: { type: Array },
         phone: { type: String, required: true },
         add_admin: { type: Boolean, default: false },

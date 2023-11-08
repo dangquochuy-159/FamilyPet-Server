@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 const CategorySchema = Schema(
     {
         name: { type: String, required: true, unique: true },
-        photo: { type: String },
+        photo: { type: Array },
         slug: { type: String, slug: "name", unique: true },
     },
     {
