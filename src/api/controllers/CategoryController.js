@@ -39,9 +39,12 @@ const getOneCategory = (req, res, next) => {
 const addCategory = (req, res, next) => {
     let arrPhoto = []
     if (req.file) {
+        console.log(req.file.path)
+        console.log(req.file.filename)
         arrPhoto.push(req.file.path)
         arrPhoto.push(req.file.filename)
     }
+
     const category = new Category({
         name: req.body.name,
         photo: arrPhoto,
